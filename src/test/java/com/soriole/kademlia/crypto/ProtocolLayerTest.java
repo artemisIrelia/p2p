@@ -1,10 +1,9 @@
-package com.soriole.kademlia.protocols;
+package com.soriole.kademlia.crypto;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
 
 import java.security.GeneralSecurityException;
-import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

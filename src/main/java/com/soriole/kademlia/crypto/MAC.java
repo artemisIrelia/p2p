@@ -1,4 +1,4 @@
-package com.soriole.kademlia.protocols;
+package com.soriole.kademlia.crypto;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -11,8 +11,8 @@ public class MAC {
 
     SecretKeySpec signKey;
     Mac mac;
-
-    public void init(String password, String algoMAC) throws NoSuchAlgorithmException, InvalidKeyException{
+    String algoMAC="HmacSha1";
+    public void init(String password) throws NoSuchAlgorithmException, InvalidKeyException{
         //Generate Secret key from user key
         signKey = new SecretKeySpec(password.getBytes(), algoMAC);
         //Get mac instance
@@ -23,12 +23,12 @@ public class MAC {
     }
 
     //generate MAC
-    public byte[] giveMeMAC(String password, String message, String algoMAC){
+    public byte[] giveMeMAC(String password, byte[] message){
         try {
             //Initialize the MAC with Key
-            init(password, algoMAC);
+            init(password);
             //Compute MAC
-            return ( mac.doFinal(message.getBytes()));
+            return ( mac.doFinal(message));
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(MAC.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidKeyException ex) {
@@ -36,4 +36,5 @@ public class MAC {
         }
         return null;
     }
+
 }

@@ -1,4 +1,4 @@
-package com.soriole.kademlia.protocols;
+package com.soriole.kademlia.crypto;
 
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
@@ -31,23 +31,27 @@ public class AESEncryption {
     }
 
 
-    public static String encrypt(final String password, String message)
-            throws GeneralSecurityException {
+    public byte[] encrypt(final String password, String message)
+            throws GeneralSecurityException, UnsupportedEncodingException {
+        final SecretKeySpec key = generateKey(password);
+        byte[] cipherText = encrypt(key, ivBytes, message.getBytes(CHARSET));
+        //NO_WRAP is important as was getting \n at the end
+            return cipherText;
+    }
 
-        try {
+
+    public String encryptTobase64String(final String password, String message)
+            throws GeneralSecurityException, UnsupportedEncodingException {
             final SecretKeySpec key = generateKey(password);
             byte[] cipherText = encrypt(key, ivBytes, message.getBytes(CHARSET));
             //NO_WRAP is important as was getting \n at the end
             String encoded = Base64.encodeBase64String(cipherText);
             //Log.d("Base64.NO_WRAP", encoded);
             return encoded;
-        } catch (UnsupportedEncodingException e) {
-            throw new GeneralSecurityException(e);
-        }
     }
 
 
-    public static byte[] encrypt(final SecretKeySpec key, final byte[] iv, final byte[] message)
+    private byte[] encrypt(final SecretKeySpec key, final byte[] iv, final byte[] message)
             throws GeneralSecurityException{
         final Cipher cipher = Cipher.getInstance(AES_MODE);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
@@ -56,24 +60,27 @@ public class AESEncryption {
         return cipherText;
     }
 
+    public String decrypt(final String password, byte[] cipherText)
+            throws GeneralSecurityException, UnsupportedEncodingException {
+            final SecretKeySpec key = generateKey(password);
+            byte[] decryptedBytes = decrypt(key, ivBytes, cipherText);
+            String message = new String(decryptedBytes, CHARSET);
+            //Log.d("message", message);
+            return message;
+    }
 
-    public static String decrypt(final String password, String base64EncodedCipherText)
-            throws GeneralSecurityException {
-
-        try {
+    public String decrypt(final String password, String base64EncodedCipherText)
+            throws GeneralSecurityException, UnsupportedEncodingException {
             final SecretKeySpec key = generateKey(password);
             byte[] decodedCipherText = Base64.decodeBase64(base64EncodedCipherText);
             byte[] decryptedBytes = decrypt(key, ivBytes, decodedCipherText);
             String message = new String(decryptedBytes, CHARSET);
             //Log.d("message", message);
             return message;
-        } catch (UnsupportedEncodingException e) {
-            throw new GeneralSecurityException(e);
-        }
     }
 
 
-    public static byte[] decrypt(final SecretKeySpec key, final byte[] iv, final byte[] decodedCipherText)
+    private byte[] decrypt(final SecretKeySpec key, final byte[] iv, final byte[] decodedCipherText)
             throws GeneralSecurityException {
         final Cipher cipher = Cipher.getInstance(AES_MODE);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
@@ -84,7 +91,7 @@ public class AESEncryption {
 
 
 
-    public static String getHexString(byte[] b) throws Exception {
+    public String getHexString(byte[] b) throws Exception {
         String result = "";
         for (int i=0; i < b.length; i++) {
             result +=
@@ -93,7 +100,7 @@ public class AESEncryption {
         return result;
     }
 
-    public static byte[] getByteArray(String s) {
+    public  byte[] getByteArray(String s) {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {

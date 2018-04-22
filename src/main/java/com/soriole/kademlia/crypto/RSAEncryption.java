@@ -1,4 +1,4 @@
-package com.soriole.kademlia.protocols;
+package com.soriole.kademlia.crypto;
 
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
@@ -16,59 +16,50 @@ import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 
 public final class RSAEncryption {
 
-    private PrivateKey secretKey;
-    private PublicKey publicKey;
+    private PrivateKey privateKey;
+    public PublicKey publicKey;
 
-    public String giveMeDecrypted(String message, PrivateKey prv){
-        try {
-            return decrypt(message, prv);
-        } catch (GeneralSecurityException ex) {
-            Logger.getLogger(RSAEncryption.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+    public RSAEncryption(){
+        KeyPair keyPair = giveMeKeyPair(256);
+        publicKey = keyPair.getPublic();
+        privateKey = keyPair.getPrivate();
     }
 
-    public String giveMeEncrypted(String message, PublicKey pub){
-        try {
-            return encrypt(message, pub);
-        } catch (GeneralSecurityException ex) {
-            Logger.getLogger(RSAEncryption.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+    public byte[] encrypt(String message, PublicKey pub) throws Exception {
+        byte[] cipherText = encryptToByte(message, pub);
+        return cipherText;
     }
 
-    public static String encrypt(String message, PublicKey pub) throws GeneralSecurityException {
-
-        try {
-            byte[] cipherText = encryptToByte(message, pub);
-            //NO_WRAP is important as was getting \n at the end
-            String encoded = Base64.encodeBase64String(cipherText);
-            return encoded;
-        } catch (UnsupportedEncodingException e) {
-            throw new GeneralSecurityException(e);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public String encryptToBase64String(String message, PublicKey pub) throws Exception {
+        byte[] cipherText = encryptToByte(message, pub);
+        //NO_WRAP is important as was getting \n at the end
+        String encoded = Base64.encodeBase64String(cipherText);
+        return encoded;
     }
 
-    public static String decrypt(String base64EncodedCipherText, PrivateKey prv) throws GeneralSecurityException {
+    public String decrypt(byte[] cipherText, PrivateKey prv) throws Exception {
+        byte[] decryptedBytes = decryptToByte(cipherText, prv);
+        String message = new String(decryptedBytes);
+        return message;
+    }
 
-        try {
+    public String decrypt(String base64EncodedCipherText, PrivateKey prv) throws Exception {
             byte[] decodedCipherText = Base64.decodeBase64(base64EncodedCipherText);
             byte[] decryptedBytes = decryptToByte(decodedCipherText, prv);
             String message = new String(decryptedBytes);
             return message;
-        } catch (UnsupportedEncodingException e) {
-            throw new GeneralSecurityException(e);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    }
+
+
+    public PublicKey getMyPublicKey() {
+        return publicKey;
+    }
+
+    public PrivateKey getMyPrivateKey() {
+        return privateKey;
     }
 
     public KeyPair giveMeKeyPair(int keySize){
@@ -80,7 +71,31 @@ public final class RSAEncryption {
         return null;
     }
 
-    public static KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException
+    public PublicKey giveMePublicFromString(String pubInString){
+        PublicKey p = null;
+        try {
+            p = getPublicKeyFromByte(pubInString);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return p;
+    }
+
+
+    public PrivateKey giveMePrivateString(String prvInString){
+        PrivateKey p = null;
+        try {
+            p = getPrivateKeyFromByte(prvInString);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+        }
+        return p;
+    }
+    private KeyPair generateKeyPair(int keySize) throws NoSuchAlgorithmException
     {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(keySize);
@@ -88,7 +103,7 @@ public final class RSAEncryption {
         return keyPair;
     }
 
-    public static byte[] encryptToByte(String message, PublicKey publicKey) throws Exception
+    private byte[] encryptToByte(String message, PublicKey publicKey) throws Exception
     {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -96,7 +111,7 @@ public final class RSAEncryption {
         return enc;
     }
 
-    public static byte[] decryptToByte(byte[] cipherText, PrivateKey privateKey) throws Exception
+    private byte[] decryptToByte(byte[] cipherText, PrivateKey privateKey) throws Exception
     {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
@@ -117,31 +132,6 @@ public final class RSAEncryption {
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PrivateKey prv = kf.generatePrivate(new PKCS8EncodedKeySpec(prvInByte));
         return prv;
-    }
-
-    public PublicKey giveMePublic(String pubInString){
-        PublicKey p = null;
-        try {
-            p = getPublicKeyFromByte(pubInString);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return p;
-    }
-
-
-    public PrivateKey giveMePrivate(String prvInString){
-        PrivateKey p = null;
-        try {
-            p = getPrivateKeyFromByte(prvInString);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return p;
     }
 
     public String getHexString(byte[] b) throws Exception {
